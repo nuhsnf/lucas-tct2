@@ -59,3 +59,68 @@ O sistema possui três níveis de acesso, cada um com permissões e visões espe
 * **Lançamento de Notas e Faltas:** O sistema é focado exclusivamente no planeamento (Guia de Ensino); não substituirá o Diário de Classe eletrónico.
 * **Ambiente Virtual de Aprendizagem (AVA):** O sistema não hospedará aulas online, fóruns de discussão ou entrega de tarefas por parte dos estudantes.
 * **Gestão de Horários das Aulas:** O mapeamento de horários e alocação física de salas não serão geridos por esta ferramenta nesta primeira fase.
+
+* # Especificação de Arquitetura de Software: Sistema de Gestão do Guia de Ensino e Aprendizagem (SG-GEA)
+## Abordagem Serverless Zero-Custo (Google Workspace for Education & Apps Script)
+
+Este documento detalha a arquitetura técnica, os componentes de hardware/software e os fluxos de integração para o sistema de automatização do Guia de Ensino e Aprendizagem, projetado especificamente para uma **escola estadual** utilizando recursos 100% gratuitos do ecossistema Google.
+
+---
+
+## 💻 1. Componentes de Hardware e Infraestrutura
+
+Como a solução é baseada inteiramente em computação em nuvem (*Cloud-Native* e *Serverless*), a instituição não necessita de servidores locais, infraestrutura de rede complexa ou gastos com manutenção de TI.
+
+### Dispositivos dos Utilizadores (Clientes)
+* **Computadores e Chromebooks da Escola:** Dispositivos locais utilizados pelos professores no planeamento e pela coordenação na validação dentro do ambiente escolar.
+* **Dispositivos Móveis e Computadores Pessoais:** Smartphones (Android/iOS) e portáteis utilizados por docentes e alunos para acesso remoto (em casa ou via Wi-Fi da escola).
+
+### Servidores na Nuvem (Infraestrutura Google)
+* **Google Cloud Servers:** Data centers globais da Google que processam o código, gerem a autenticação, alojam os ficheiros e garantem alta disponibilidade (24/7) com custo zero para contas educacionais.
+
+---
+
+## 🛠️ 2. Stack Tecnológica (Tecnologias Utilizadas)
+
+A arquitetura utiliza exclusivamente as ferramentas do **Google Workspace for Education**, aproveitando as licenças gratuitas já fornecidas às escolas estaduais.
+
+| Camada | Tecnologia / Ferramenta | Função no Sistema | Custos |
+| :--- | :--- | :--- | :--- |
+| **Interface (Front-End)** | Google Forms / HTML5 + CSS3 via Apps Script | Captura dos dados pedagógicos inseridos pelos professores através de um formulário intuitivo. | R$ 0,00 |
+| **Cérebro (Back-End)** | Google Apps Script (Baseado em JavaScript) | Execução da lógica de negócio, automação de fluxos, geração de documentos e envio de e-mails. | R$ 0,00 |
+| **Banco de Dados** | Google Sheets (Planilhas Google) | Armazenamento estruturado de todos os guias preenchidos, comentários e estados de aprovação. | R$ 0,00 |
+| **Segurança / Login** | Google OAuth 2.0 (Contas Institucionais) | Autenticação obrigatória. Restringe o acesso apenas a e-mails autorizados do domínio do Estado. | R$ 0,00 |
+| **Armazenamento** | Google Drive & Google Docs | Geração de templates dinâmicos e armazenamento dos Guias finais em formato PDF não editável. | R$ 0,00 |
+| **Notificações** | Gmail Service (via Apps Script) | Disparo automático de e-mails de alerta para a coordenação e alertas de correção para professores. | R$ 0,00 |
+
+---
+
+## 🔄 3. Relacionamento e Fluxo da Informação (Dataflow)
+
+O relacionamento entre os componentes ocorre através de gatilhos automáticos (*triggers*) orientados a eventos, divididos em quatro etapas principais:
+
+### 1. Submissão e Autenticação
+* O **Professor** acede ao formulário. O sistema valida a identidade através do **Google OAuth 2.0**.
+* O formulário recolhe os dados estruturados (Justificativa, Conteúdos, Habilidades, Recursos, etc.).
+
+### 2. Processamento e Persistência
+* Ao clicar em "Enviar", os dados são registados numa nova linha do **Google Sheets** (Banco de Dados).
+* Este evento ativa um gatilho (*OnFormSubmit*) no **Google Apps Script**.
+* O Script lê os dados da linha, acede a um modelo base no **Google Docs**, substitui os campos variáveis (ex: `{{justificativa}}`) e gera um documento formatado.
+
+### 3. Workflow de Aprovação
+* O Script utiliza o serviço do **Gmail** para enviar uma notificação ao **Coordenador Pedagógico**.
+* O Coordenador analisa o documento e, diretamente pela planilha ou por uma interface simples, altera o estado para `Aprovado` ou `Necessita de Ajustes`.
+
+### 4. Publicação e Consulta
+* Se o estado for alterado para `Aprovado`, o **Apps Script** converte o Google Doc em **PDF** de forma automática.
+* O arquivo PDF é movido para uma pasta partilhada pública no **Google Drive**.
+* Os **Estudantes** acedem à pasta através de um link partilhado para consultar o planeamento do trimestre.
+
+---
+
+## 🛡️ 4. Segurança, Limites e Viabilidade
+
+* **Segurança de Dados:** O acesso ao ecossistema está protegido pela criptografia padrão do Google. Nenhuma pessoa externa ao domínio institucional pode visualizar os dados ou submeter formulários.
+* **Limites de Cota (Quotas):** As contas do Google Workspace for Education possuem limites diários generosos (ex: até 1500 e-mails automáticos por dia e criação massiva de ficheiros). O fluxo de uma escola estadual consumirá menos de 5% destas cotas gratuitas.
+* **Manutenção:** Como não existem servidores físicos ou serviços de alojamento pagos (como AWS, Azure ou GCP tradicional), o custo de manutenção técnica a longo prazo é nulo.
